@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Private Chat</title>
+    <script src="encryption.js"></script>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+      }
+      
+      .chat-container {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+      }
+      
+      .header {
+        margin-bottom: 20px;
+      }
+      
+      .registration-area {
+        background-color: #f5f5f5;
+        padding: 15px;
+        border-radius: 5px;
+        margin-bottom: 20px;
+      }
+      
+      .main-area {
+        display: flex;
+        height: 70vh;
+      }
+      
+      .users-panel {
+        width: 200px;
+        background-color: #f0f0f0;
+        padding: 10px;
+        border-radius: 5px;
+        margin-right: 15px;
+        overflow-y: auto;
+      }
+      
+      .users-panel h3 {
+        margin-top: 0;
+        border-bottom: 1px solid #ddd;
+        padding-bottom: 5px;
+      }
+      
+      .user-list {
+        list-style-type: none;
+        padding: 0;
+      }
+      
+      .user-list li {
+        padding: 8px;
+        margin-bottom: 5px;
+        cursor: pointer;
+        border-radius: 3px;
+      }
+      
+      .user-list li:hover {
+        background-color: #e0e0e0;
+      }
+      
+      .user-list li.selected {
+        background-color: #d1e7dd;
+      }
+      
+      .user-list .online-indicator {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: #4CAF50;
+        margin-right: 5px;
+      }
+      
+      .offline-indicator {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background-color: #cccccc;
+        margin-right: 5px;
+      }
+      
+      .user-status {
+        font-size: 11px;
+        color: #777;
+        margin-left: 13px;
+        display: block;
+      }
+      
+      .chat-panel {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+      }
+      
+      .chat-header {
+        padding: 10px;
+        background-color: #f9f9f9;
+        border-radius: 5px 5px 0 0;
+        border-bottom: 1px solid #ddd;
+      }
+      
+      .typing-indicator {
+        font-style: italic;
+        color: #777;
+        font-size: 12px;
+        height: 16px;
+        margin-top: 5px;
+      }
+      
+      .message-area {
+        display: flex;
+        margin-top: 15px;
+      }
+      
+      .input-group {
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1;
+        margin-right: 10px;
+      }
+      
+      #msgInput {
+        flex-grow: 1;
+        padding: 8px;
+        width: 100%;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+      }
+      
+      .controls {
+        display: flex;
+        margin-top: 5px;
+      }
+      
+      .file-upload {
+        position: relative;
+        overflow: hidden;
+        cursor: pointer;
+        background-color: #f0f0f0;
+        padding: 5px 10px;
+        border-radius: 3px;
+        margin-right: 10px;
+      }
+      
+      .file-upload input[type=file] {
+        position: absolute;
+        left: 0;
+        top: 0;
+        opacity: 0;
+        width: 100%;
+        height: 100%;
+        cursor: pointer;
+      }
+      
+      .encryption-toggle {
+        display: flex;
+        align-items: center;
+        margin-right: 10px;
+        font-size: 12px;
+      }
+      
+      .toggle-switch {
+        position: relative;
+        display: inline-block;
+        width: 40px;
+        height: 20px;
+        margin-right: 5px;
+      }
+      
+      .toggle-switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+      
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background-color: #ccc;
+        transition: .4s;
+        border-radius: 20px;
+      }
+      
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 16px;
+        width: 16px;
+        left: 2px;
+        bottom: 2px;
+        background-color: white;
+        transition: .4s;
+        border-radius: 50%;
+      }
+      
+      input:checked + .slider {
+        background-color: #4CAF50;
+      }
+      
+      input:checked + .slider:before {
+        transform: translateX(20px);
+      }
+      
+      button {
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        cursor: pointer;
+        border-radius: 3px;
+      }
+      
+      button:hover {
+        background-color: #45a049;
+      }
+      
+      button:disabled {
+        background-color: #cccccc;
+        cursor: not-allowed;
+      }
+      
+      #chatBox {
+        list-style-type: none;
+        padding: 10px;
+        margin: 0;
+        background-color: #f9f9f9;
+        border: 1px solid #ddd;
+        border-radius: 0 0 5px 5px;
+        height: 100%;
+        overflow-y: auto;
+      }
+      
+      #chatBox li {
+        padding: 8px 12px;
+        margin-bottom: 8px;
+        border-radius: 5px;
+        position: relative;
+      }
+      
+      .status-message {
+        background-color: #e6f7ff;
+        color: #0066cc;
+        font-style: italic;
+        text-align: center;
+      }
+      
+      .error-message {
+        background-color: #ffebee;
+        color: #c62828;
+      }
+      
+      .sent-message {
+        background-color: #e8f5e9;
+        color: #2e7d32;
+        text-align: right;
+        margin-left: 20%;
+      }
+      
+      .received-message {
+        background-color: #f5f5f5;
+        margin-right: 20%;
+      }
+      
+      .system-message {
+        background-color: #f5f5f5;
+        color: #666;
+        font-style: italic;
+        text-align: center;
+        font-size: 12px;
+      }
+      
+      .encrypted-badge {
+        font-size: 10px;
+        color: #0066cc;
+        background-color: #e6f7ff;
+        padding: 2px 5px;
+        border-radius: 3px;
+        margin-left: 5px;
+      }
+      
+      .image-container {
+        max-width: 100%;
+        margin: 5px 0;
+      }
+      
+      .image-container img {
+        max-width: 100%;
+        max-height: 200px;
+        border-radius: 3px;
+        cursor: pointer;
+      }
+      
+      .image-preview {
+        max-width: 150px;
+        max-height: 60px;
+        margin-top: 5px;
+        border-radius: 3px;
+      }
+      
+      .timestamp {
+        font-size: 10px;
+        color: #777;
+        margin-top: 4px;
+      }
+      
+      .connection-status {
+        font-size: 12px;
+        margin-top: 5px;
+      }
+      
+      .read-receipt {
+        font-size: 10px;
+        color: #777;
+        text-align: right;
+      }
+      
+      .reconnect-button {
+        margin-left: 10px;
+      }
+      
+      /* Loading spinner */
+      .spinner {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border: 2px solid rgba(0, 0, 0, 0.1);
+        border-left-color: #4CAF50;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin-left: 5px;
+      }
+      
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      
+      /* Modal for full-size image view */
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.8);
+      }
+      
+      .modal-content {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+      }
+      
+      .modal-image {
+        max-width: 90%;
+        max-height: 90%;
+      }
+      
+      .close-modal {
+        position: absolute;
+        top: 15px;
+        right: 25px;
+        font-size: 35px;
+        color: white;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="chat-container">
+      <div class="header">
+        <h2>Private Chat App</h2>
+        <div id="connectionStatus" class="connection-status">Not connected</div>
+      </div>
+
+      <div class="registration-area">
+        <label for="usernameInput">Your Name:</label>
+        <input id="usernameInput" />
+        <button id="registerBtn" onclick="registerUser()">Register</button>
+        <button id="reconnectBtn" class="reconnect-button" onclick="reconnect()" style="display: none;">Reconnect</button>
+      </div>
+
+      <div class="main-area">
+        <div class="users-panel">
+          <h3>Online Users</h3>
+          <ul id="userList" class="user-list"></ul>
+        </div>
+        
+        <div class="chat-panel">
+          <div class="chat-header">
+            <b>Chatting with: <span id="currentRecipient">No one selected</span></b>
+            <div id="typingIndicator" class="typing-indicator"></div>
+          </div>
+          
+          <ul id="chatBox"></ul>
+          
+          <div class="message-area">
+            <input id="msgInput" placeholder="Type a message..." />
+            <button id="sendBtn" onclick="sendMessage()" disabled>Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let socket;
+      let username = "";
+      let currentRecipient = "";
+      let typingTimeout;
+      let reconnectAttempts = 0;
+      let maxReconnectAttempts = 5;
+      let reconnectInterval = 3000; // Start with 3 seconds
+      let isReconnecting = false;
+      
+      const connectionStatus = document.getElementById("connectionStatus");
+      const sendBtn = document.getElementById("sendBtn");
+      const registerBtn = document.getElementById("registerBtn");
+      const reconnectBtn = document.getElementById("reconnectBtn");
+      const usernameInput = document.getElementById("usernameInput");
+      const msgInput = document.getElementById("msgInput");
+      const chatBox = document.getElementById("chatBox");
+      const userList = document.getElementById("userList");
+      const currentRecipientElement = document.getElementById("currentRecipient");
+      const typingIndicator = document.getElementById("typingIndicator");
+
+      // Check for saved username in localStorage
+      window.addEventListener('load', function() {
+        const savedUsername = localStorage.getItem('chatUsername');
+        if (savedUsername) {
+          usernameInput.value = savedUsername;
+          // Auto-register if we have a saved username
+          registerUser();
+        }
+      });
+      
+      // Handle page reload/close to save state
+      window.addEventListener('beforeunload', function() {
+        if (username) {
+          localStorage.setItem('chatUsername', username);
+          localStorage.setItem('currentRecipient', currentRecipient);
+        }
+      });
+
+      // Enable sending messages with Enter key
+      msgInput.addEventListener("keyup", function(event) {
+        if (event.key === "Enter") {
+          sendMessage();
+        }
+        
+        // Send typing indicator
+        if (currentRecipient) {
+          clearTimeout(typingTimeout);
+          
+          // Send typing indicator
+          if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(
+              JSON.stringify({
+                type: "typing",
+                to: currentRecipient,
+                isTyping: true
+              })
+            );
+          }
+          
+          // Clear typing indicator after 2 seconds of inactivity
+          typingTimeout = setTimeout(() => {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+              socket.send(
+                JSON.stringify({
+                  type: "typing",
+                  to: currentRecipient,
+                  isTyping: false
+                })
+              );
+            }
+          }, 2000);
+        }
+      });
+
+      // Enable registration with Enter key
+      usernameInput.addEventListener("keyup", function(event) {
+        if (event.key === "Enter") {
+          registerUser();
+        }
+      });
+      
+      // Reconnect to server
+      function reconnect() {
+        if (isReconnecting) return;
+        
+        isReconnecting = true;
+        reconnectBtn.disabled = true;
+        reconnectBtn.innerHTML = 'Reconnecting <div class="spinner"></div>';
+        
+        if (reconnectAttempts < maxReconnectAttempts) {
+          connectionStatus.textContent = `Reconnecting... Attempt ${reconnectAttempts + 1}/${maxReconnectAttempts}`;
+          
+          setTimeout(() => {
+            reconnectAttempts++;
+            setupWebSocket();
+          }, reconnectInterval);
+          
+          // Exponential backoff for reconnect attempts
+          reconnectInterval = Math.min(reconnectInterval * 1.5, 30000);
+        } else {
+          connectionStatus.textContent = "Failed to reconnect after multiple attempts";
+          reconnectBtn.disabled = false;
+          reconnectBtn.innerHTML = 'Try Again';
+          isReconnecting = false;
+        }
+      }
+      
+      // Set up the WebSocket connection
+      function setupWebSocket() {
+        try {
+          socket = new WebSocket("ws://localhost:8080");
+
+          socket.onopen = () => {
+            if (username) {
+              // Reregister with saved username
+              socket.send(
+                JSON.stringify({
+                  type: "register",
+                  username: username,
+                })
+              );
+              connectionStatus.textContent = "Reconnected as " + username;
+            } else {
+              connectionStatus.textContent = "Connected";
+            }
+            
+            reconnectAttempts = 0;
+            reconnectInterval = 3000;
+            isReconnecting = false;
+            reconnectBtn.style.display = "none";
+            reconnectBtn.innerHTML = 'Reconnect';
+          };
+
+          socket.onmessage = handleMessage;
+
+          socket.onclose = function(event) {
+            if (!event.wasClean) {
+              connectionStatus.textContent = "Connection lost";
+              sendBtn.disabled = true;
+              reconnectBtn.style.display = "inline-block"; 
+              reconnectBtn.disabled = false;
+            } else {
+              connectionStatus.textContent = "Disconnected";
+              sendBtn.disabled = true;
+            }
+            addMessageToChatBox("Disconnected from server", "status-message");
+          };
+
+          socket.onerror = function() {
+            connectionStatus.textContent = "Connection error";
+            addMessageToChatBox("Connection error occurred", "error-message");
+            
+            // Only show reconnect if we had a username
+            if (username) {
+              reconnectBtn.style.display = "inline-block";
+              reconnectBtn.disabled = false;
+            }
+          };
+          
+        } catch (error) {
+          connectionStatus.textContent = "Connection failed";
+          addMessageToChatBox(`Connection failed: ${error.message}`, "error-message");
+          isReconnecting = false;
+          reconnectBtn.style.display = "inline-block";
+          reconnectBtn.disabled = false;
+          reconnectBtn.innerHTML = 'Reconnect';
+        }
+      }
+      
+      // Handle incoming WebSocket messages
+      function handleMessage(event) {
+        try {
+          const data = JSON.parse(event.data);
+          
+          // Handle different message types
+          switch (data.type) {
+            case "message":
+              addMessageToChatBox(`${data.from}: ${data.message}`, "received-message", data.from, data.timestamp);
+              // Send read receipt
+              socket.send(
+                JSON.stringify({
+                  type: "read",
+                  to: data.from,
+                  timestamp: data.timestamp
+                })
+              );
+              break;
+              
+            case "error":
+              addMessageToChatBox(`Error: ${data.error}`, "error-message");
+              break;
+              
+            case "system":
+              addMessageToChatBox(data.message, "system-message");
+              
+              // If this is a welcome message, enable sending
+              if (data.message.includes("Welcome") && data.message.includes(username)) {
+                sendBtn.disabled = false;
+                registerBtn.disabled = true;
+                usernameInput.disabled = true;
+                
+                // Restore previous recipient if there was one
+                const savedRecipient = localStorage.getItem('currentRecipient');
+                if (savedRecipient) {
+                  setTimeout(() => {
+                    // Select user after user list is updated
+                    if (document.querySelector(`#userList li[data-username="${savedRecipient}"]`)) {
+                      selectUser(savedRecipient);
+                    }
+                  }, 500);
+                }
+              }
+              break;
+              
+            case "info":
+              addMessageToChatBox(data.message, "status-message");
+              break;
+              
+            case "userList":
+              updateUserListUI(data.users);
+              break;
+              
+            case "typing":
+              if (data.from === currentRecipient) {
+                if (data.isTyping) {
+                  typingIndicator.textContent = `${data.from} is typing...`;
+                } else {
+                  typingIndicator.textContent = "";
+                }
+              }
+              break;
+              
+            case "read":
+              // Update read status on messages
+              document.querySelectorAll(".sent-message").forEach(msg => {
+                const timestampElem = msg.querySelector(".timestamp");
+                if (timestampElem && timestampElem.dataset.timestamp && 
+                    new Date(timestampElem.dataset.timestamp) <= new Date(data.timestamp)) {
+                  if (!msg.querySelector(".read-receipt")) {
+                    const readReceipt = document.createElement("div");
+                    readReceipt.className = "read-receipt";
+                    readReceipt.textContent = "Read";
+                    msg.appendChild(readReceipt);
+                  }
+                }
+              });
+              break;
+              
+            case "history":
+              // Only show history for current conversation
+              const users = data.conversationId.split("-");
+              if (users.includes(currentRecipient) && users.includes(username)) {
+                data.messages.forEach(msg => {
+                  if (msg.from === username) {
+                    addMessageToChatBox(`You to ${currentRecipient}: ${msg.message}`, "sent-message", `You to ${currentRecipient}`, msg.timestamp);
+                  } else {
+                    addMessageToChatBox(`${msg.from}: ${msg.message}`, "received-message", msg.from, msg.timestamp);
+                  }
+                });
+              }
+              break;
+              
+            default:
+              // For backward compatibility
+              if (data.message) {
+                addMessageToChatBox(`${data.from}: ${data.message}`, "received-message", data.from);
+              }
+          }
+        } catch (error) {
+          console.error("Error processing message:", error);
+        }
+      }
+      
+      // Select user from the list
+      function selectUser(user) {
+        currentRecipient = user;
+        currentRecipientElement.textContent = user;
+        
+        // Save current recipient
+        localStorage.setItem('currentRecipient', user);
+        
+        // Update selected user in UI
+        document.querySelectorAll("#userList li").forEach(li => {
+          li.classList.remove("selected");
+          if (li.dataset.username === user) {
+            li.classList.add("selected");
+          }
+        });
+        
+        // Clear and show relevant chat history
+        chatBox.innerHTML = '';
+        filterChatHistory(user);
+        
+        // Enable message input
+        msgInput.focus();
+      }
+      
+      // Filter and display chat history for selected user
+      function filterChatHistory(user) {
+        // Message filtering will be handled by the message handler
+        // as history messages come from the server
+      }
+      
+      // Add user to the online users list
+      function updateUserListUI(users) {
+        userList.innerHTML = '';
+        
+        if (users.length === 0) {
+          const li = document.createElement("li");
+          li.textContent = "No other users online";
+          li.style.cursor = "default";
+          li.style.color = "#777";
+          userList.appendChild(li);
+          return;
+        }
+        
+        users.forEach(user => {
+          if (user === username) return; // Skip current user
+          
+          const li = document.createElement("li");
+          li.dataset.username = user;
+          
+          const indicator = document.createElement("span");
+          indicator.className = "online-indicator";
+          
+          li.appendChild(indicator);
+          li.appendChild(document.createTextNode(user));
+          
+          li.addEventListener("click", () => selectUser(user));
+          
+          if (user === currentRecipient) {
+            li.classList.add("selected");
+          }
+          
+          userList.appendChild(li);
+        });
+      }
+
+      function addMessageToChatBox(message, type, from = null, timestamp = null) {
+        // Skip messages not from/to current recipient unless it's a system message
+        if (type !== 'system-message' && type !== 'status-message' && type !== 'error-message' && 
+            from !== currentRecipient && from !== 'You to ' + currentRecipient) {
+          return;
+        }
+        
+        const msg = document.createElement("li");
+        msg.className = type;
+        
+        // Set message content
+        msg.textContent = message;
+        
+        // Add timestamp if provided
+        if (timestamp) {
+          const timestampElem = document.createElement("div");
+          timestampElem.className = "timestamp";
+          timestampElem.textContent = new Date(timestamp).toLocaleTimeString();
+          
+          // Store original timestamp for read receipts
+          timestampElem.dataset.timestamp = timestamp;
+          
+          msg.appendChild(timestampElem);
+        }
+        
+        chatBox.appendChild(msg);
+        chatBox.scrollTop = chatBox.scrollHeight; // Auto-scroll to bottom
+      }
+
+      function registerUser() {
+        username = usernameInput.value.trim();
+        
+        if (!username) {
+          addMessageToChatBox("Please enter a username", "error-message");
+          return;
+        }
+        
+        connectionStatus.textContent = "Connecting...";
+        
+        // Save username
+        localStorage.setItem('chatUsername', username);
+        
+        // Setup WebSocket connection
+        setupWebSocket();
+      }
+
+      function sendMessage() {
+        const message = msgInput.value.trim();
+
+        if (!username || !socket || socket.readyState !== WebSocket.OPEN) {
+          addMessageToChatBox("You must register first", "error-message");
+          return;
+        }
+
+        if (!currentRecipient) {
+          addMessageToChatBox("Please select a recipient", "error-message");
+          return;
+        }
+
+        if (!message) {
+          addMessageToChatBox("Please enter a message", "error-message");
+          return;
+        }
+
+        try {
+          socket.send(
+            JSON.stringify({
+              type: "message",
+              from: username,
+              to: currentRecipient,
+              message: message,
+            })
+          );
+
+          const timestamp = new Date().toISOString();
+          addMessageToChatBox(`You to ${currentRecipient}: ${message}`, "sent-message", `You to ${currentRecipient}`, timestamp);
+          msgInput.value = "";
+          
+          // Clear typing indicator after sending message
+          if (socket && socket.readyState === WebSocket.OPEN) {
+            socket.send(
+              JSON.stringify({
+                type: "typing",
+                to: currentRecipient,
+                isTyping: false
+              })
+            );
+          }
+        } catch (error) {
+          addMessageToChatBox(`Error sending message: ${error.message}`, "error-message");
+        }
+      }
+      
+      // Add a WebSocket connection check
+      function checkConnection() {
+        if (socket && socket.readyState === WebSocket.OPEN) {
+          return true;
+        }
+        
+        if (username && !isReconnecting) {
+          connectionStatus.textContent = "Connection lost";
+          reconnectBtn.style.display = "inline-block";
+          sendBtn.disabled = true;
+        }
+        
+        return false;
+      }
+      
+      // Periodically check connection
+      setInterval(checkConnection, 5000);
+    </script>
+  </body>
+</html>
